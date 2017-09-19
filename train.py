@@ -9,6 +9,7 @@ from instance import Feature
 from instance import Example
 from hyperparams import HyperParams
 from model import RNNLabeler
+import  time
 from eval import Eval
 
 
@@ -155,6 +156,7 @@ class Labeler:
             batchBlock += 1
         for iter in range(self.hyperParams.maxIter):
             print('###Iteration' + str(iter) + "###")
+            start = time.time()
             random.shuffle(indexes)
             self.model.train()
             for updateIter in range(batchBlock):
@@ -175,21 +177,30 @@ class Labeler:
                 optimizer.step()
                 if (updateIter + 1) % self.hyperParams.verboseIter == 0:
                     print('current: ', idx + 1, ", cost:", loss.data[0])
+            elapsed = (time.time() - start)
+            print("Trainning Time used:", elapsed, 's')
 
             self.model.eval()
             eval_dev = Eval()
+            start = time.time()
             for idx in range(len(devExamples)):
                 predictLabel = self.predict(devExamples[idx])
                 devInsts[idx].evalACC(predictLabel, eval_dev)
             print("dev: ", end='')
             eval_dev.getACC()
+            elapsed = (time.time() - start)
+            print("dev Time used:", elapsed, 's')
+
 
             eval_test = Eval()
+            start = time.time()
             for idx in range(len(testExamples)):
                 predictLabel = self.predict(testExamples[idx])
                 testInsts[idx].evalACC(predictLabel, eval_test)
             print("test: ", end='')
             eval_test.getACC()
+            elapsed = (time.time() - start)
+            print("dev Time used:", elapsed, 's')
 
     def predict(self, exam):
         output = self.model(exam.feat.wordIndexs)

@@ -21,9 +21,9 @@ class RNNLabeler(nn.Module):
                            dropout=hyperParams.dropProb,
                            batch_first=True, num_layers=2, bidirectional=True)
         self.linearLayer = nn.Linear(hyperParams.rnnHiddenSize * 2, hyperParams.labelSize, bias=False)
-        init.xavier_uniform(self.linearLayer.weight)
+        init.kaiming_uniform(self.linearLayer.weight)
         self.outputLayer = nn.Linear(hyperParams.rnnHiddenSize * 2, hyperParams.labelSize, bias=False)
-        init.xavier_uniform(self.outputLayer.weight)
+        init.kaiming_uniform(self.outputLayer.weight)
 
     def init_hidden(self, batch):
         if self.hyperParams.useCuda:
@@ -40,7 +40,9 @@ class RNNLabeler(nn.Module):
         info = allLines[0].strip().split(' ')
         embDim = len(info) - 1
         emb = nn.Embedding(self.hyperParams.wordNum, embDim)
-        init.xavier_uniform(emb.weight)
+        init.uniform(emb.weight,
+                     a=-numpy.sqrt(3 / embDim),
+                     b=numpy.sqrt(3 / embDim))
         oov_emb = torch.zeros(1, embDim).type(torch.FloatTensor)
         for line in allLines:
             info = line.strip().split(' ')
