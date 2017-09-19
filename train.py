@@ -59,6 +59,12 @@ class Labeler:
         print("Padding ID: ", self.hyperParams.paddingID)
         print("UNK ID: ", self.hyperParams.unkWordID)
 
+        outstr = open("C:\\Users\\yunan\\Desktop\\wordalpha", encoding='utf8', mode='w')
+        for idx in range(self.hyperParams.wordAlpha.m_size):
+            outstr.write(self.hyperParams.wordAlpha.from_id(idx))
+            outstr.write('\n')
+        outstr.close()
+
     def addTestAlpha(self, insts):
         print("Add test alpha.............")
         if self.hyperParams.wordFineTune == False:
@@ -95,13 +101,14 @@ class Labeler:
 
     def getBatchFeatLabel(self, exams):
         maxSentSize = 0
+        batch = len(exams)
         for e in exams:
             if maxSentSize < e.feat.sentLen:
                 maxSentSize = e.feat.sentLen
         if maxSentSize > 40:
             maxSentSize = 40
-        batch_feats = torch.autograd.Variable(torch.LongTensor(self.hyperParams.batch, maxSentSize))
-        batch_labels = torch.autograd.Variable(torch.LongTensor(self.hyperParams.batch))
+        batch_feats = torch.autograd.Variable(torch.LongTensor(batch, maxSentSize))
+        batch_labels = torch.autograd.Variable(torch.LongTensor(batch))
 
         for idx in range(len(batch_feats.data)):
             e = exams[idx]
@@ -111,7 +118,11 @@ class Labeler:
                     batch_feats.data[idx][idy] = e.feat.wordIndexs.data[0][idy]
                 else:
                     batch_feats.data[idx][idy] = self.hyperParams.paddingID
-        return batch_feats, batch_labels
+        if self.hyperParams.useCuda:
+            return batch_feats.cuda(), batch_labels.cuda(), batch
+        else:
+            return batch_feats, batch_labels, batch
+
 
     def train(self, train_file, dev_file, test_file):
         self.hyperParams.show()
@@ -133,14 +144,19 @@ class Labeler:
         testExamples = self.instance2Example(testInsts)
 
         self.model = RNNLabeler(self.hyperParams)
+        if self.hyperParams.useCuda:
+            self.model.cuda()
         parameters = filter(lambda p: p.requires_grad, self.model.parameters())
         optimizer = torch.optim.Adam(parameters, lr=self.hyperParams.learningRate)
 
         indexes = []
-        for idx in range(len(trainExamples)):
+        train_num = len(trainExamples)
+        for idx in range(train_num):
             indexes.append(idx)
 
         batchBlock = len(trainExamples) // self.hyperParams.batch
+        if train_num % self.hyperParams.batch != 0:
+            batchBlock += 1
         for iter in range(self.hyperParams.maxIter):
             print('###Iteration' + str(iter) + "###")
             random.shuffle(indexes)
@@ -151,12 +167,15 @@ class Labeler:
                 exams = []
                 start_pos = updateIter * self.hyperParams.batch
                 end_pos = (updateIter + 1) * self.hyperParams.batch
+                if end_pos > train_num:
+                    end_pos = train_num
                 for idx in range(start_pos, end_pos):
                     exams.append(trainExamples[indexes[idx]])
-                feats, labels = self.getBatchFeatLabel(exams)
-                output = self.model(feats, self.hyperParams.batch)
+                feats, labels, batch = self.getBatchFeatLabel(exams)
+                output = self.model(feats, batch)
                 loss = torch.nn.functional.cross_entropy(output, labels)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm(parameters, self.hyperParams.clip)
                 optimizer.step()
                 if (updateIter + 1) % self.hyperParams.verboseIter == 0:
                     print('current: ', idx + 1, ", cost:", loss.data[0])
@@ -202,6 +221,8 @@ parser.add_option("--test", dest="testFile",
                   help="test dataset")
 
 
+random.seed(0)
+torch.manual_seed(0)
 (options, args) = parser.parse_args()
 l = Labeler()
 l.train(options.trainFile, options.devFile, options.testFile)

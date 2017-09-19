@@ -8,20 +8,22 @@ class HyperParams:
         self.unkWordID = 0
         self.paddingID = 0
 
-        self.maxIter = 5
+        self.clip = 10
+        self.maxIter = 20
         self.verboseIter = 20
         self.wordCutOff = 0
         self.wordEmbSize = 100
         self.wordFineTune = True
-        self.wordEmbFile = "E:\\py_workspace\\classifier\\data\\glove.twitter.27B.100d.txt"
-        #self.wordEmbFile = ""
-        self.dropProb = 0.1
+        #self.wordEmbFile = "E:\\py_workspace\\classifier\\data\\glove.twitter.27B.200d.txt"
+        self.wordEmbFile = ""
+        self.dropProb = 0.5
         self.rnnHiddenSize = 100
         self.hiddenSize = 100
         self.thread = 1
         self.learningRate = 0.001
-        self.maxInstance = -1
-        self.batch = 12
+        self.maxInstance = 10
+        self.batch = 1
+        self.useCuda = False
 
         self.wordAlpha = Alphabet()
         self.labelAlpha = Alphabet()
@@ -31,6 +33,7 @@ class HyperParams:
         print('wordFineTune = ', self.wordFineTune)
         print('rnnHiddenSize = ', self.rnnHiddenSize)
         print('learningRate = ', self.learningRate)
+        print('clip = ', self.clip)
         print('batch = ', self.batch)
 
         print('maxInstance = ', self.maxInstance)
