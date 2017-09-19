@@ -59,12 +59,6 @@ class Labeler:
         print("Padding ID: ", self.hyperParams.paddingID)
         print("UNK ID: ", self.hyperParams.unkWordID)
 
-        outstr = open("C:\\Users\\yunan\\Desktop\\wordalpha", encoding='utf8', mode='w')
-        for idx in range(self.hyperParams.wordAlpha.m_size):
-            outstr.write(self.hyperParams.wordAlpha.from_id(idx))
-            outstr.write('\n')
-        outstr.close()
-
     def addTestAlpha(self, insts):
         print("Add test alpha.............")
         if self.hyperParams.wordFineTune == False:
@@ -85,6 +79,8 @@ class Labeler:
             if wordId == -1:
                 wordId = self.hyperParams.unkWordID
             feat.wordIndexs.data[0][idx] = wordId
+        if self.hyperParams.useCuda:
+            feat.wordIndexs.cuda()
         return feat
 
     def instance2Example(self, insts):
