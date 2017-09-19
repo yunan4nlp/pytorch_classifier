@@ -21,6 +21,7 @@ class HyperParams:
         self.hiddenSize = 100
         self.thread = 1
         self.learningRate = 0.001
+        self.reg = 1e-6
         self.maxInstance = 10
         self.batch = 1
         self.useCuda = False

@@ -144,7 +144,9 @@ class Labeler:
         if self.hyperParams.useCuda:
             self.model.cuda()
         parameters = filter(lambda p: p.requires_grad, self.model.parameters())
-        optimizer = torch.optim.Adam(parameters, lr=self.hyperParams.learningRate)
+        optimizer = torch.optim.Adam(parameters,
+                                     lr=self.hyperParams.learningRate,
+                                     weight_decay=self.hyperParams.reg)
 
         indexes = []
         train_num = len(trainExamples)
